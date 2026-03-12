@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Claude Learning Plan Builder</title>
+<title>AI Learning Journey</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -733,7 +733,7 @@ body {
 
   <!-- HEADER -->
   <header class="header">
-    <span class="logo">Claude · Learning Plan</span>
+    <span class="logo">AI Learning Journey</span>
     <div class="progress-wrap" id="progressWrap" style="display:none">
       <span class="progress-label" id="progressLabel">1 / 7</span>
       <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
@@ -744,7 +744,7 @@ body {
   <div class="screen active" id="screen-intro">
     <div class="intro-hero">
       <div class="intro-tag">✦ Personalised to you</div>
-      <h1 class="intro-title">Your <em>Claude</em><br>Learning Journey</h1>
+      <h1 class="intro-title">Your <em>AI</em><br>Learning Journey</h1>
       <p class="intro-desc">Answer 7 quick questions and we'll build you a personalised week-by-week plan for mastering AI at work — tailored to your role, your tools, and your ambitions.</p>
       <div class="intro-stats">
         <div class="stat">
@@ -817,6 +817,10 @@ body {
   <!-- SCREEN 5: PLAN -->
   <div class="screen" id="screen-plan"></div>
 
+</div>
+
+<div style="text-align:center;padding:32px 24px 48px;position:relative;z-index:2;">
+  <p style="font-family:'DM Mono',monospace;font-size:0.6rem;letter-spacing:0.14em;text-transform:uppercase;color:#6B6078;">Prototype · Recommendations are currently Claude-specific</p>
 </div>
 
 <script>
@@ -1451,9 +1455,8 @@ async function logToSheets(personaKey, weeksCount) {
   const sessionId = generateSessionId();
   const timestamp = new Date().toISOString();
 
-  // ---- PAYLOAD 1: Tab 1 row — tester selections summary ----
+  // ---- TAB 1: Single response row with tester selections ----
   const responseRow = {
-    type: 'response',
     session_id: sessionId,
     timestamp,
     persona: PERSONAS[personaKey].name,
@@ -1466,12 +1469,11 @@ async function logToSheets(personaKey, weeksCount) {
     )
   };
 
-  // ---- PAYLOAD 2: Tab 2 rows — one full row per module ----
+  // ---- TAB 2: All module rows as an array ----
   const moduleRows = [];
   plan.forEach(week => {
     week.modules.forEach((mod, modIdx) => {
       moduleRows.push({
-        type: 'plan_detail',
         session_id: sessionId,
         timestamp,
         persona: PERSONAS[personaKey].name,
@@ -1488,23 +1490,31 @@ async function logToSheets(personaKey, weeksCount) {
     });
   });
 
-  // Fire payloads sequentially — Apps Script can't handle many concurrent requests
-  const allPayloads = [responseRow, ...moduleRows];
-  const delay = ms => new Promise(res => setTimeout(res, ms));
-
+  // Send as two clean requests — one per tab
+  // Wrapped in a self-executing async so it never blocks the UI
   (async () => {
-    for (const payload of allPayloads) {
-      try {
-        await fetch(SHEETS_WEBHOOK_URL, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        await delay(150); // Small gap between requests to avoid throttling
-      } catch (e) {
-        console.warn('Logging failed silently for one row:', e);
-      }
+    try {
+      // Request 1: response row → Responses tab
+      await fetch(SHEETS_WEBHOOK_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tab: 'Responses', row: responseRow })
+      });
+
+      // Small gap before second request
+      await new Promise(res => setTimeout(res, 300));
+
+      // Request 2: all module rows → Plan Detail tab
+      await fetch(SHEETS_WEBHOOK_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tab: 'Plan Detail', rows: moduleRows })
+      });
+
+    } catch (e) {
+      console.warn('Logging failed silently:', e);
     }
   })();
 }
@@ -1610,9 +1620,9 @@ function showPlan() {
       <div class="weeks-nav">${weeksNavHTML}</div>
       ${weeksHTML}
       <div class="plan-actions">
-        <button class="btn-primary" onclick="window.print()">
+        <button class="btn-secondary" disabled style="opacity:0.4;cursor:not-allowed;">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6V2h8v4M4 12H2V7h12v5h-2M4 10h8v4H4v-4z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          Print / Save Plan
+          Save Plan — Coming Soon
         </button>
         <button class="btn-secondary" onclick="restartQuiz()">
           ↺ Start Over
