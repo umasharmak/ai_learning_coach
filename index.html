@@ -1,0 +1,1630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude Learning Plan Builder</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #FDFBF7;
+  --surface: #FFFFFF;
+  --border: #E8E4DE;
+  --primary: #2E1F3E;
+  --secondary: #6B5F7A;
+  --text: #3A3340;
+  --muted: #9B93A8;
+  --accent: #D4CFE0;
+  --dusk-bg: #1A1124;
+  --dusk-surface: #241830;
+  --dusk-border: #3A2E4A;
+  --dusk-primary: #C8C0D8;
+  --dusk-secondary: #9B93A8;
+  --dusk-text: #E4E0EC;
+  --dusk-muted: #6B6078;
+  --dusk-accent: #4A3860;
+  --spark: #7B5EA7;
+  --spark-light: #9B7EC8;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--dusk-bg);
+  color: var(--dusk-text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ANIMATED BACKGROUND */
+.bg-mesh {
+  position: fixed; inset: 0; z-index: 0;
+  background: 
+    radial-gradient(ellipse 80% 60% at 20% 30%, rgba(123,94,167,0.18) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 80% at 80% 70%, rgba(75,50,110,0.22) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 40% at 50% 10%, rgba(155,126,200,0.08) 0%, transparent 50%),
+    var(--dusk-bg);
+  animation: meshShift 12s ease-in-out infinite alternate;
+}
+
+@keyframes meshShift {
+  0% { background-position: 0% 0%; }
+  100% { 
+    background: 
+      radial-gradient(ellipse 80% 60% at 30% 40%, rgba(123,94,167,0.22) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 80% at 70% 60%, rgba(75,50,110,0.28) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 40% at 40% 15%, rgba(155,126,200,0.1) 0%, transparent 50%),
+      var(--dusk-bg);
+  }
+}
+
+.grain {
+  position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+}
+
+/* CONTAINER */
+.app {
+  position: relative; z-index: 2;
+  min-height: 100vh;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 0 24px 80px;
+}
+
+/* HEADER */
+.header {
+  width: 100%; max-width: 760px;
+  padding: 40px 0 0;
+  display: flex; align-items: center; justify-content: space-between;
+}
+
+.logo {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem; font-weight: 500;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--dusk-muted);
+}
+
+.progress-wrap {
+  display: flex; align-items: center; gap: 12px;
+}
+
+.progress-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.6rem; font-weight: 500;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--dusk-muted);
+}
+
+.progress-bar {
+  width: 120px; height: 3px;
+  background: var(--dusk-border);
+  border-radius: 2px; overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--spark), var(--spark-light));
+  border-radius: 2px;
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* SCREENS */
+.screen {
+  width: 100%; max-width: 760px;
+  display: none;
+  animation: fadeUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+.screen.active { display: block; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* INTRO SCREEN */
+.intro-hero {
+  padding: 80px 0 60px;
+  text-align: center;
+}
+
+.intro-tag {
+  display: inline-block;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem; font-weight: 500;
+  letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--spark-light);
+  border: 1px solid var(--dusk-accent);
+  padding: 6px 16px; border-radius: 20px;
+  margin-bottom: 32px;
+  background: rgba(74,56,96,0.3);
+}
+
+.intro-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(2.8rem, 7vw, 5rem);
+  color: var(--dusk-primary);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  margin-bottom: 24px;
+}
+
+.intro-title em {
+  font-style: italic;
+  background: linear-gradient(135deg, var(--spark-light), #C8A8E8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.intro-desc {
+  font-size: 1.05rem; font-weight: 300;
+  color: var(--dusk-secondary);
+  line-height: 1.8;
+  max-width: 520px; margin: 0 auto 48px;
+}
+
+.intro-stats {
+  display: flex; justify-content: center; gap: 48px;
+  margin-bottom: 56px;
+}
+
+.stat {
+  text-align: center;
+}
+.stat-num {
+  font-family: 'DM Serif Display', serif;
+  font-size: 2rem; color: var(--dusk-primary);
+  display: block;
+}
+.stat-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.6rem; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--dusk-muted);
+}
+
+.btn-primary {
+  display: inline-flex; align-items: center; gap: 10px;
+  background: linear-gradient(135deg, var(--spark), #5A3F8A);
+  color: #fff;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.95rem; font-weight: 500;
+  padding: 16px 40px; border-radius: 4px;
+  border: none; cursor: pointer;
+  transition: all 0.2s ease;
+  letter-spacing: 0.02em;
+  box-shadow: 0 4px 20px rgba(123,94,167,0.4);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(123,94,167,0.5);
+}
+
+.btn-primary svg { transition: transform 0.2s; }
+.btn-primary:hover svg { transform: translateX(4px); }
+
+/* QUESTION SCREEN */
+.question-wrap {
+  padding: 64px 0 40px;
+}
+
+.q-step {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.62rem; font-weight: 500;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--spark-light);
+  margin-bottom: 16px;
+}
+
+.q-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(1.6rem, 4vw, 2.4rem);
+  color: var(--dusk-primary);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  margin-bottom: 12px;
+}
+
+.q-subtitle {
+  font-size: 0.9rem; font-weight: 300;
+  color: var(--dusk-muted);
+  margin-bottom: 40px;
+}
+
+/* CHOICE CARDS */
+.choices {
+  display: grid; gap: 12px;
+}
+.choices.grid-2 { grid-template-columns: 1fr 1fr; }
+.choices.grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+.choices.grid-1 { grid-template-columns: 1fr; }
+
+.choice {
+  background: var(--dusk-surface);
+  border: 1px solid var(--dusk-border);
+  border-radius: 8px;
+  padding: 20px 24px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex; align-items: flex-start; gap: 16px;
+  position: relative; overflow: hidden;
+}
+
+.choice::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(123,94,167,0.1), transparent);
+  opacity: 0; transition: opacity 0.2s;
+}
+
+.choice:hover { border-color: var(--spark); transform: translateY(-2px); box-shadow: 0 4px 16px rgba(123,94,167,0.2); }
+.choice:hover::before { opacity: 1; }
+
+.choice.selected {
+  border-color: var(--spark-light);
+  background: rgba(123,94,167,0.15);
+}
+.choice.selected::before { opacity: 1; }
+
+.choice-icon {
+  font-size: 1.5rem; flex-shrink: 0;
+  width: 40px; height: 40px;
+  background: var(--dusk-border);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.2s;
+}
+.choice.selected .choice-icon { background: rgba(123,94,167,0.3); }
+
+.choice-content { flex: 1; }
+
+.choice-label {
+  font-weight: 500; font-size: 0.92rem;
+  color: var(--dusk-text);
+  margin-bottom: 4px;
+}
+
+.choice-desc {
+  font-size: 0.8rem; font-weight: 300;
+  color: var(--dusk-muted); line-height: 1.5;
+}
+
+.choice-check {
+  width: 20px; height: 20px; border-radius: 50%;
+  border: 2px solid var(--dusk-border);
+  flex-shrink: 0; margin-top: 2px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+}
+.choice.selected .choice-check {
+  background: var(--spark); border-color: var(--spark);
+}
+.choice.selected .choice-check::after {
+  content: ''; display: block;
+  width: 6px; height: 6px;
+  background: white; border-radius: 50%;
+}
+
+/* MULTI SELECT CHIPS */
+.chips {
+  display: flex; flex-wrap: wrap; gap: 10px;
+}
+
+.chip {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--dusk-surface);
+  border: 1px solid var(--dusk-border);
+  border-radius: 24px;
+  padding: 10px 18px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.88rem; color: var(--dusk-secondary);
+}
+
+.chip:hover { border-color: var(--spark); color: var(--dusk-text); }
+.chip.selected {
+  border-color: var(--spark-light);
+  background: rgba(123,94,167,0.2);
+  color: var(--dusk-primary);
+}
+.chip .chip-emoji { font-size: 1rem; }
+
+/* OPEN TEXT */
+.open-input {
+  width: 100%;
+  background: var(--dusk-surface);
+  border: 1px solid var(--dusk-border);
+  border-radius: 8px;
+  padding: 20px 24px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.95rem; font-weight: 300;
+  color: var(--dusk-text);
+  resize: none; min-height: 120px;
+  transition: border-color 0.2s;
+  line-height: 1.7;
+}
+.open-input:focus { outline: none; border-color: var(--spark); }
+.open-input::placeholder { color: var(--dusk-muted); }
+
+/* WEEK SELECTOR */
+.week-select-wrap {
+  display: flex; gap: 16px; margin-bottom: 40px;
+}
+
+.week-option {
+  flex: 1;
+  background: var(--dusk-surface);
+  border: 1px solid var(--dusk-border);
+  border-radius: 8px;
+  padding: 24px 20px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s;
+}
+
+.week-option:hover { border-color: var(--spark); }
+.week-option.selected { border-color: var(--spark-light); background: rgba(123,94,167,0.15); }
+
+.week-num {
+  font-family: 'DM Serif Display', serif;
+  font-size: 2.4rem; color: var(--dusk-primary);
+  display: block; margin-bottom: 4px;
+}
+.week-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.6rem; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--dusk-muted);
+  display: block; margin-bottom: 8px;
+}
+.week-desc {
+  font-size: 0.8rem; font-weight: 300; color: var(--dusk-secondary);
+}
+
+/* NAV */
+.q-nav {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 40px;
+  padding-top: 32px;
+  border-top: 1px solid var(--dusk-border);
+}
+
+.btn-back {
+  background: none; border: none; cursor: pointer;
+  display: flex; align-items: center; gap: 8px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.88rem; color: var(--dusk-muted);
+  padding: 10px 0;
+  transition: color 0.2s;
+}
+.btn-back:hover { color: var(--dusk-secondary); }
+
+.btn-next {
+  display: inline-flex; align-items: center; gap: 10px;
+  background: linear-gradient(135deg, var(--spark), #5A3F8A);
+  color: #fff;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.9rem; font-weight: 500;
+  padding: 14px 32px; border-radius: 4px;
+  border: none; cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 16px rgba(123,94,167,0.35);
+}
+.btn-next:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(123,94,167,0.45); }
+.btn-next:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+/* PERSONA REVEAL */
+.persona-reveal {
+  padding: 80px 0 40px;
+  text-align: center;
+}
+
+.persona-badge {
+  width: 120px; height: 120px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--dusk-accent), rgba(123,94,167,0.4));
+  border: 2px solid var(--dusk-border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 3rem;
+  margin: 0 auto 32px;
+  animation: revealPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  box-shadow: 0 0 60px rgba(123,94,167,0.3);
+}
+
+@keyframes revealPop {
+  from { transform: scale(0.3) rotate(-15deg); opacity: 0; }
+  to { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+.persona-tag {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.62rem; font-weight: 500;
+  letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--spark-light);
+  margin-bottom: 12px;
+}
+
+.persona-name {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  color: var(--dusk-primary);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin-bottom: 16px;
+}
+
+.persona-desc {
+  font-size: 1rem; font-weight: 300;
+  color: var(--dusk-secondary); line-height: 1.8;
+  max-width: 540px; margin: 0 auto 40px;
+}
+
+.persona-traits {
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 10px;
+  margin-bottom: 48px;
+}
+
+.trait-pill {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--dusk-surface);
+  border: 1px solid var(--dusk-border);
+  border-radius: 24px;
+  padding: 8px 16px;
+  font-size: 0.82rem; color: var(--dusk-secondary);
+}
+
+.trait-pill .trait-icon { font-size: 0.9rem; }
+
+/* PLAN SCREEN */
+.plan-header {
+  padding: 60px 0 40px;
+}
+
+.plan-intro {
+  display: flex; align-items: flex-start; gap: 24px;
+  background: var(--dusk-surface);
+  border: 1px solid var(--dusk-border);
+  border-radius: 8px;
+  padding: 28px 32px;
+  margin-bottom: 48px;
+}
+
+.plan-persona-mini {
+  font-size: 2rem; flex-shrink: 0;
+  width: 56px; height: 56px;
+  background: var(--dusk-accent);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.plan-intro-text h2 {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.3rem; color: var(--dusk-primary);
+  letter-spacing: -0.01em; margin-bottom: 6px;
+}
+.plan-intro-text p {
+  font-size: 0.85rem; font-weight: 300;
+  color: var(--dusk-secondary); line-height: 1.7;
+}
+
+.weeks-nav {
+  display: flex; gap: 8px; margin-bottom: 32px; flex-wrap: wrap;
+}
+
+.week-tab {
+  background: none; border: 1px solid var(--dusk-border);
+  border-radius: 4px;
+  padding: 8px 20px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.82rem; color: var(--dusk-muted);
+  cursor: pointer; transition: all 0.2s;
+}
+.week-tab:hover { border-color: var(--spark); color: var(--dusk-secondary); }
+.week-tab.active {
+  border-color: var(--spark-light);
+  background: rgba(123,94,167,0.2);
+  color: var(--dusk-primary);
+}
+
+.week-content { display: none; }
+.week-content.active { display: block; animation: fadeUp 0.4s ease forwards; }
+
+.week-title-row {
+  display: flex; align-items: center; gap: 16px; margin-bottom: 8px;
+}
+
+.week-big-num {
+  font-family: 'DM Serif Display', serif;
+  font-size: 3rem; color: var(--dusk-accent); opacity: 0.5;
+  line-height: 1;
+}
+
+.week-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.5rem; color: var(--dusk-primary);
+  letter-spacing: -0.01em;
+}
+
+.week-theme {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.62rem; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--spark-light);
+  margin-bottom: 28px;
+}
+
+.modules-grid {
+  display: grid; grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+.module-card {
+  background: var(--dusk-surface);
+  border: 1px solid var(--dusk-border);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+
+.module-card:hover { border-color: var(--spark); }
+
+.module-header {
+  padding: 20px 24px 16px;
+  display: flex; align-items: flex-start; gap: 16px;
+  cursor: pointer;
+}
+
+.module-num {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.6rem; font-weight: 500;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--spark-light);
+  background: rgba(123,94,167,0.15);
+  border-radius: 4px; padding: 4px 10px;
+  flex-shrink: 0; margin-top: 2px;
+}
+
+.module-title-wrap { flex: 1; }
+
+.module-title {
+  font-weight: 500; font-size: 0.95rem;
+  color: var(--dusk-text); margin-bottom: 4px;
+}
+
+.module-subtitle {
+  font-size: 0.8rem; font-weight: 300;
+  color: var(--dusk-muted);
+}
+
+.module-toggle {
+  color: var(--dusk-muted); transition: transform 0.3s;
+  font-size: 1.2rem; flex-shrink: 0;
+}
+.module-card.open .module-toggle { transform: rotate(180deg); }
+
+.module-body {
+  display: none; padding: 0 24px 24px;
+  border-top: 1px solid var(--dusk-border);
+  padding-top: 20px;
+}
+.module-card.open .module-body { display: block; }
+
+.module-section {
+  margin-bottom: 20px;
+}
+.module-section:last-child { margin-bottom: 0; }
+
+.module-section-title {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.6rem; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--dusk-muted);
+  margin-bottom: 10px;
+}
+
+.module-section p,
+.module-section li {
+  font-size: 0.88rem; font-weight: 300;
+  color: var(--dusk-secondary); line-height: 1.7;
+}
+
+.module-section ul { padding-left: 16px; }
+.module-section li { margin-bottom: 4px; }
+
+.fun-task {
+  background: linear-gradient(135deg, rgba(123,94,167,0.12), rgba(74,56,96,0.2));
+  border: 1px solid var(--dusk-accent);
+  border-radius: 6px;
+  padding: 16px 20px;
+}
+
+.fun-task-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.6rem; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--spark-light);
+  margin-bottom: 8px; display: flex; align-items: center; gap: 6px;
+}
+
+.fun-task p {
+  font-size: 0.88rem; font-weight: 300;
+  color: var(--dusk-secondary); line-height: 1.65;
+}
+
+.work-task {
+  background: var(--dusk-bg);
+  border: 1px solid var(--dusk-border);
+  border-radius: 6px;
+  padding: 16px 20px;
+}
+
+.work-task-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.6rem; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--dusk-muted);
+  margin-bottom: 8px; display: flex; align-items: center; gap: 6px;
+}
+
+.work-task p {
+  font-size: 0.88rem; font-weight: 300;
+  color: var(--dusk-secondary); line-height: 1.65;
+}
+
+/* LOADING */
+.loading-screen {
+  padding: 100px 0;
+  text-align: center;
+}
+
+.loading-orb {
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--spark), #5A3F8A);
+  margin: 0 auto 32px;
+  animation: pulse 1.5s ease-in-out infinite;
+  box-shadow: 0 0 40px rgba(123,94,167,0.5);
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.15); opacity: 0.8; }
+}
+
+.loading-text {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.6rem; color: var(--dusk-primary);
+  margin-bottom: 12px;
+}
+
+.loading-sub {
+  font-size: 0.88rem; font-weight: 300;
+  color: var(--dusk-muted);
+}
+
+/* PLAN ACTIONS */
+.plan-actions {
+  display: flex; gap: 16px; margin-top: 48px; flex-wrap: wrap;
+}
+
+.btn-secondary {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--dusk-surface);
+  border: 1px solid var(--dusk-border);
+  color: var(--dusk-secondary);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.88rem; font-weight: 500;
+  padding: 12px 24px; border-radius: 4px;
+  cursor: pointer; transition: all 0.2s;
+}
+.btn-secondary:hover { border-color: var(--spark); color: var(--dusk-text); }
+
+/* RESPONSIVE */
+@media (max-width: 600px) {
+  .choices.grid-2, .choices.grid-3 { grid-template-columns: 1fr; }
+  .week-select-wrap { flex-direction: column; }
+  .intro-stats { gap: 24px; }
+  .plan-intro { flex-direction: column; }
+}
+</style>
+</head>
+<body>
+<div class="bg-mesh"></div>
+<div class="grain"></div>
+
+<div class="app">
+
+  <!-- HEADER -->
+  <header class="header">
+    <span class="logo">Claude · Learning Plan</span>
+    <div class="progress-wrap" id="progressWrap" style="display:none">
+      <span class="progress-label" id="progressLabel">1 / 7</span>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+    </div>
+  </header>
+
+  <!-- SCREEN 0: INTRO -->
+  <div class="screen active" id="screen-intro">
+    <div class="intro-hero">
+      <div class="intro-tag">✦ Personalised to you</div>
+      <h1 class="intro-title">Your <em>Claude</em><br>Learning Journey</h1>
+      <p class="intro-desc">Answer 7 quick questions and we'll build you a personalised week-by-week plan for mastering AI at work — tailored to your role, your tools, and your ambitions.</p>
+      <div class="intro-stats">
+        <div class="stat">
+          <span class="stat-num">7</span>
+          <span class="stat-label">Questions</span>
+        </div>
+        <div class="stat">
+          <span class="stat-num">6</span>
+          <span class="stat-label">Personas</span>
+        </div>
+        <div class="stat">
+          <span class="stat-num">4–8</span>
+          <span class="stat-label">Week Plan</span>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="startQuiz()">
+        Build My Plan
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- SCREEN 1: QUESTIONS (dynamic) -->
+  <div class="screen" id="screen-questions">
+    <div class="question-wrap" id="questionWrap"></div>
+  </div>
+
+  <!-- SCREEN 2: WEEK SELECT -->
+  <div class="screen" id="screen-weeks">
+    <div class="question-wrap">
+      <div class="q-step">Almost there</div>
+      <h2 class="q-title">How long do you want your learning plan to be?</h2>
+      <p class="q-subtitle">Pick the depth that matches your ambition right now.</p>
+      <div class="week-select-wrap">
+        <div class="week-option" onclick="selectWeeks(4, this)">
+          <span class="week-num">4</span>
+          <span class="week-label">Weeks</span>
+          <p class="week-desc">Quick start — core skills, fast wins</p>
+        </div>
+        <div class="week-option" onclick="selectWeeks(6, this)">
+          <span class="week-num">6</span>
+          <span class="week-label">Weeks</span>
+          <p class="week-desc">Balanced — skills plus deeper practice</p>
+        </div>
+        <div class="week-option" onclick="selectWeeks(8, this)">
+          <span class="week-num">8</span>
+          <span class="week-label">Weeks</span>
+          <p class="week-desc">Full programme — mastery track</p>
+        </div>
+      </div>
+      <div class="q-nav">
+        <button class="btn-back" onclick="goBack()">← Back</button>
+        <button class="btn-next" id="weekNextBtn" disabled onclick="buildPlan()">Generate My Plan →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 3: LOADING -->
+  <div class="screen" id="screen-loading">
+    <div class="loading-screen">
+      <div class="loading-orb"></div>
+      <h2 class="loading-text">Building your plan...</h2>
+      <p class="loading-sub">Crafting your personalised learning journey</p>
+    </div>
+  </div>
+
+  <!-- SCREEN 4: PERSONA REVEAL -->
+  <div class="screen" id="screen-persona"></div>
+
+  <!-- SCREEN 5: PLAN -->
+  <div class="screen" id="screen-plan"></div>
+
+</div>
+
+<script>
+// ---- STATE ----
+const state = {
+  answers: {},
+  persona: null,
+  weeks: null,
+  currentQ: 0
+};
+
+// ---- QUESTIONS ----
+const QUESTIONS = [
+  {
+    id: 'role',
+    step: 'Step 1 of 7',
+    title: 'What best describes your role?',
+    subtitle: 'Choose the one that fits most closely.',
+    type: 'single',
+    layout: 'grid-2',
+    options: [
+      { icon: '📊', label: 'Finance & Strategy', desc: 'Analysis, planning, modelling, reporting' },
+      { icon: '📣', label: 'Marketing & Comms', desc: 'Content, campaigns, brand, social' },
+      { icon: '🤝', label: 'Sales & Client', desc: 'Pitches, proposals, account management' },
+      { icon: '⚙️', label: 'Operations & Projects', desc: 'Process, delivery, coordination' },
+      { icon: '💻', label: 'Tech & Product', desc: 'Dev, data, product management' },
+      { icon: '🧠', label: 'Consulting & Advisory', desc: 'Research, strategy, presentations' },
+      { icon: '👥', label: 'People & HR', desc: 'Talent, culture, learning & development' },
+      { icon: '🌐', label: 'Other / Generalist', desc: 'Mix of the above or something unique' }
+    ]
+  },
+  {
+    id: 'tasks',
+    step: 'Step 2 of 7',
+    title: 'What do you spend most of your time doing?',
+    subtitle: 'Select all that apply — be honest!',
+    type: 'multi',
+    options: [
+      { icon: '✍️', label: 'Writing & editing' },
+      { icon: '📈', label: 'Data analysis' },
+      { icon: '🔍', label: 'Research' },
+      { icon: '📅', label: 'Planning & scheduling' },
+      { icon: '🎤', label: 'Meetings & presenting' },
+      { icon: '📨', label: 'Emails & comms' },
+      { icon: '📋', label: 'Reports & documents' },
+      { icon: '🛠️', label: 'Building / coding' },
+      { icon: '🤝', label: 'Client & stakeholder work' },
+      { icon: '💡', label: 'Strategy & ideation' }
+    ]
+  },
+  {
+    id: 'ai_usage',
+    step: 'Step 3 of 7',
+    title: 'How much have you used AI tools so far?',
+    subtitle: 'Be honest — there\'s no wrong answer.',
+    type: 'single',
+    layout: 'grid-1',
+    options: [
+      { icon: '👀', label: 'Just heard about it', desc: 'I haven\'t really tried any AI tools yet' },
+      { icon: '🐾', label: 'Tried it once or twice', desc: 'I\'ve had a play but don\'t use it regularly' },
+      { icon: '🔄', label: 'Occasional user', desc: 'I use ChatGPT, Copilot or similar sometimes' },
+      { icon: '⚡', label: 'Regular user', desc: 'AI is already part of how I work most days' }
+    ]
+  },
+  {
+    id: 'tech_level',
+    step: 'Step 4 of 7',
+    title: 'How would you describe your tech comfort level?',
+    subtitle: 'This helps us pitch the complexity just right.',
+    type: 'single',
+    layout: 'grid-1',
+    options: [
+      { icon: '🙋', label: 'Not techy at all', desc: 'I use tools but don\'t dig into the how or why' },
+      { icon: '💡', label: 'Comfortable', desc: 'I pick up new tools quickly and can troubleshoot' },
+      { icon: '🔧', label: 'Quite technical', desc: 'I understand APIs, data, maybe some coding' },
+      { icon: '🚀', label: 'Very technical', desc: 'I build things, write code, love going deep' }
+    ]
+  },
+  {
+    id: 'ambition',
+    step: 'Step 5 of 7',
+    title: 'What\'s your ambition for using AI at work?',
+    subtitle: 'Dream big or keep it practical — both are valid.',
+    type: 'single',
+    layout: 'grid-1',
+    options: [
+      { icon: '😌', label: 'Just curious', desc: 'I want to understand what all the fuss is about' },
+      { icon: '⏱️', label: 'Save time', desc: 'I want quick wins and to spend less time on admin' },
+      { icon: '⚡', label: 'Become a power user', desc: 'I want AI deeply embedded in how I work' },
+      { icon: '🌟', label: 'Lead AI adoption', desc: 'I want to be the person who brings AI to my team' }
+    ]
+  },
+  {
+    id: 'tools',
+    step: 'Step 6 of 7',
+    title: 'Which tools do you use most today?',
+    subtitle: 'Select all that apply.',
+    type: 'multi',
+    options: [
+      { icon: '📊', label: 'Excel / Google Sheets' },
+      { icon: '📝', label: 'Word / Google Docs' },
+      { icon: '📊', label: 'PowerPoint / Slides' },
+      { icon: '💬', label: 'Slack / Teams' },
+      { icon: '📧', label: 'Gmail / Outlook' },
+      { icon: '📋', label: 'Notion / Confluence' },
+      { icon: '🔗', label: 'Salesforce / CRM' },
+      { icon: '💻', label: 'VS Code / coding tools' },
+      { icon: '📊', label: 'Tableau / Power BI' },
+      { icon: '🎨', label: 'Canva / Figma' }
+    ]
+  },
+  {
+    id: 'device',
+    step: 'Step 7 of 7',
+    title: 'What\'s your main device for work?',
+    subtitle: 'We\'ll tailor the experience suggestions to match.',
+    type: 'single',
+    layout: 'grid-3',
+    options: [
+      { icon: '💻', label: 'Laptop / Desktop', desc: 'My primary workspace' },
+      { icon: '📱', label: 'Mobile / Phone', desc: 'On the go a lot' },
+      { icon: '📲', label: 'iPad / Tablet', desc: 'Mix of mobile and desktop' }
+    ]
+  }
+];
+
+// ---- PERSONAS ----
+const PERSONAS = {
+  explorer: {
+    emoji: '🧭',
+    name: 'The Explorer',
+    tagline: 'Curious, open, ready to discover',
+    desc: 'You\'re at the start of your AI journey — open-minded and curious. The world of Claude is new territory, and you\'re here to explore without pressure. Your plan focuses on fun discovery, building confidence, and finding your first wins.',
+    traits: ['✨ Fresh perspective', '🐢 Steady pace', '🔍 Discovery first', '💬 Conversational learner']
+  },
+  pragmatist: {
+    emoji: '⚡',
+    name: 'The Pragmatist',
+    tagline: 'Time-poor, results-focused, no fluff',
+    desc: 'You want outcomes, not theory. Every hour counts, and AI needs to earn its place in your workflow. Your plan is lean and practical — high-impact tasks, immediate wins, and no time wasted on things that don\'t apply to you.',
+    traits: ['⏱️ Time is precious', '🎯 Outcome-driven', '💼 Work-first learning', '✂️ Cut to the chase']
+  },
+  analyst: {
+    emoji: '📊',
+    name: 'The Analyst',
+    tagline: 'Data-driven, detail-oriented, structured',
+    desc: 'You think in tables, models, and frameworks. Your work revolves around turning data into insight, and AI can be your most powerful thinking partner. Your plan focuses on analytical prompting, data interpretation, and building sharper outputs.',
+    traits: ['📐 Structured thinker', '🔢 Data fluent', '📈 Insight-seeker', '🔬 Detail-oriented']
+  },
+  communicator: {
+    emoji: '✍️',
+    name: 'The Communicator',
+    tagline: 'Word-driven, persuasive, audience-aware',
+    desc: 'Writing, presenting, and connecting with audiences is your craft. You spend your days shaping narratives, emails, reports, and pitches. Your plan unlocks AI as a brilliant co-writer — without losing your voice.',
+    traits: ['🖊️ Words matter', '🎭 Audience aware', '📣 Story-driven', '✨ Voice-conscious']
+  },
+  ambitious: {
+    emoji: '🚀',
+    name: 'The Ambitious Adopter',
+    tagline: 'Bold, forward-thinking, wants to lead',
+    desc: 'You\'re not just here to use AI — you want to understand it deeply and bring others along. You see the bigger picture and want to be ahead of the curve. Your plan goes wide and deep, covering advanced techniques and team enablement.',
+    traits: ['🌟 Big picture', '🏃 Moves fast', '👥 Team-minded', '🔮 Future-focused']
+  },
+  builder: {
+    emoji: '🔧',
+    name: 'The Power Builder',
+    tagline: 'Technical, hands-on, likes to push limits',
+    desc: 'You want to know how things work under the hood. APIs, workflows, automation — that\'s your territory. Your plan leans into the technical depth of Claude: API use, integrations, custom workflows, and building real things.',
+    traits: ['⚙️ Technical depth', '🛠️ Build first', '🔌 Integrations', '🤖 Automation mindset']
+  }
+};
+
+// ---- PERSONA SCORING ----
+function scorePersona() {
+  const a = state.answers;
+  const scores = { explorer: 0, pragmatist: 0, analyst: 0, communicator: 0, ambitious: 0, builder: 0 };
+
+  // AI usage
+  if (a.ai_usage === 0) scores.explorer += 3;
+  if (a.ai_usage === 1) { scores.explorer += 1; scores.pragmatist += 1; }
+  if (a.ai_usage === 2) { scores.pragmatist += 2; scores.analyst += 1; }
+  if (a.ai_usage === 3) { scores.ambitious += 2; scores.builder += 2; }
+
+  // Tech level
+  if (a.tech_level === 0) { scores.explorer += 2; scores.communicator += 1; }
+  if (a.tech_level === 1) { scores.pragmatist += 2; scores.communicator += 1; }
+  if (a.tech_level === 2) { scores.analyst += 2; scores.ambitious += 1; }
+  if (a.tech_level === 3) { scores.builder += 3; scores.ambitious += 1; }
+
+  // Ambition
+  if (a.ambition === 0) scores.explorer += 3;
+  if (a.ambition === 1) scores.pragmatist += 3;
+  if (a.ambition === 2) { scores.ambitious += 2; scores.analyst += 1; }
+  if (a.ambition === 3) { scores.ambitious += 3; scores.builder += 1; }
+
+  // Role
+  const roleMap = {
+    0: ['analyst'],
+    1: ['communicator'],
+    2: ['pragmatist', 'communicator'],
+    3: ['pragmatist'],
+    4: ['builder', 'analyst'],
+    5: ['ambitious', 'communicator'],
+    6: ['communicator', 'pragmatist'],
+    7: ['explorer']
+  };
+  if (a.role !== undefined && roleMap[a.role]) {
+    roleMap[a.role].forEach(p => { scores[p] += 2; });
+  }
+
+  // Tasks
+  const tasks = a.tasks || [];
+  if (tasks.includes(1)) { scores.analyst += 2; scores.builder += 1; }
+  if (tasks.includes(0)) { scores.communicator += 2; }
+  if (tasks.includes(2)) { scores.analyst += 1; scores.ambitious += 1; }
+  if (tasks.includes(7)) { scores.builder += 2; }
+  if (tasks.includes(9)) { scores.ambitious += 1; scores.analyst += 1; }
+
+  return Object.entries(scores).sort((a,b) => b[1]-a[1])[0][0];
+}
+
+// ---- LEARNING PLAN GENERATOR ----
+function generatePlan(personaKey, weeks) {
+  const role = state.answers.role;
+  const tasks = state.answers.tasks || [];
+  const ambition = state.answers.ambition;
+
+  // Core module library — each is {title, subtitle, what, skills, funTask, workTask}
+  const modules = {
+    first_chat: {
+      title: 'Your first real conversation',
+      subtitle: 'Learn how Claude thinks',
+      what: 'Claude isn\'t a search engine — it\'s a conversation partner. This module teaches you how to have a productive back-and-forth: asking follow-up questions, pushing for clarity, and building on responses.',
+      skills: ['How to give context effectively', 'How to ask follow-up questions', 'Understanding why specificity matters'],
+      funTask: '🎬 Ask Claude to explain a movie plot you love as if it were a business strategy. Then push back and ask it to make it funnier. Notice how it adapts.',
+      workTask: 'Pick one thing you\'ve been putting off this week. Describe it to Claude and ask it to help you take the first step.'
+    },
+    prompt_craft: {
+      title: 'The art of the prompt',
+      subtitle: 'Get dramatically better outputs',
+      what: 'The difference between a mediocre and brilliant Claude response is almost always in how you asked. This module covers the core prompting techniques that change everything.',
+      skills: ['Role-setting ("Act as a...")', 'Adding context and constraints', 'Asking for format and structure', 'Iteration vs one-shot prompting'],
+      funTask: '🎤 Ask Claude to write a speech defending pineapple on pizza. Then rewrite your prompt to make it 10x funnier. Compare the outputs.',
+      workTask: 'Find an email or document you wrote this week. Ask Claude to improve it — but give it your tone, audience, and purpose first.'
+    },
+    writing_basics: {
+      title: 'Claude as your co-writer',
+      subtitle: 'Write faster without losing your voice',
+      what: 'Learn how to use Claude to draft, edit, and refine written work — while keeping it sounding like you. The secret is treating Claude as a first-draft machine, not a ghostwriter.',
+      skills: ['Drafting from bullet points', 'Editing for tone and clarity', 'Repurposing content for different audiences'],
+      funTask: '📖 Write 5 bullet points about your weekend. Ask Claude to turn them into a dramatic short story. Then into a professional LinkedIn post. Notice the range.',
+      workTask: 'Take your most recent report or proposal. Ask Claude to rewrite the executive summary — then edit it back to sound like you.'
+    },
+    research_basics: {
+      title: 'Research and synthesis',
+      subtitle: 'Turn information into insight faster',
+      what: 'Claude can help you synthesise complex information, compare perspectives, and structure your thinking. This is research as a conversation, not a Google search.',
+      skills: ['Asking Claude to summarise and compare', 'Synthesising multiple sources', 'Identifying gaps and follow-up questions'],
+      funTask: '🎵 Ask Claude: "Compare the Beatles and the Rolling Stones as if you\'re a management consultant presenting to investors." Then ask it to add a chart suggestion.',
+      workTask: 'Pick a topic your industry is debating. Ask Claude to summarise three different perspectives and recommend which to explore further.'
+    },
+    data_thinking: {
+      title: 'Thinking with data',
+      subtitle: 'Let Claude be your analytical thinking partner',
+      what: 'You don\'t need to upload spreadsheets for Claude to be useful with data. You can describe datasets, share summaries, and ask Claude to help you think through what matters and why.',
+      skills: ['Interpreting data verbally with Claude', 'Asking the right analytical questions', 'Turning numbers into narratives'],
+      funTask: '⚽ Tell Claude the points, goals for, and goals against for 5 football teams (real or made up). Ask it to write a GM\'s scouting report on which team to buy.',
+      workTask: 'Take a recent data set or report you have. Paste the key figures and ask Claude: "What story does this data tell? What would you investigate next?"'
+    },
+    email_comms: {
+      title: 'Emails and comms that land',
+      subtitle: 'Never stare at a blank email again',
+      what: 'Email is where most professionals lose hours. Claude can help you draft, refine, adapt tone, and handle tricky situations — in seconds.',
+      skills: ['Drafting difficult emails', 'Adapting tone to audience', 'Writing for Slack vs email vs report'],
+      funTask: '🎭 Ask Claude to write the same piece of bad news (you\'re cancelling a party) in three styles: a corporate memo, a teen\'s text, and a Shakespearean sonnet.',
+      workTask: 'Find three emails in your drafts or sent box. For each one, ask Claude: "How could this be clearer, more persuasive, and shorter?"'
+    },
+    meetings_summaries: {
+      title: 'Meetings, notes, and summaries',
+      subtitle: 'Reclaim your post-meeting time',
+      what: 'Claude can turn raw meeting notes into action-ready summaries, extract decisions, and draft follow-up communications — transforming how you handle the admin of collaboration.',
+      skills: ['Summarising messy notes', 'Extracting actions and owners', 'Drafting follow-up emails from notes'],
+      funTask: '🎬 Write 10 lines of chaotic fake meeting notes (random ideas, interruptions, tangents). Ask Claude to produce a professional summary with action items.',
+      workTask: 'After your next meeting, paste your raw notes into Claude and ask it to: (1) summarise, (2) list decisions made, (3) list action items with owners.'
+    },
+    strategy_thinking: {
+      title: 'Strategic thinking with Claude',
+      subtitle: 'Use Claude as a thinking partner, not just a tool',
+      what: 'Claude shines when you use it to challenge your assumptions, stress-test ideas, and think through complex situations. This is about using AI as a sparring partner.',
+      skills: ['Devil\'s advocate prompting', 'SWOT / framework generation', 'Pressure-testing your own plans'],
+      funTask: '🏰 Describe a business you admire in 3 sentences. Ask Claude: "What will destroy this company in 10 years?" Then ask it to steelman why it\'ll survive.',
+      workTask: 'Pick a decision or plan you\'re working on. Ask Claude to act as a sceptical board member and list the 5 hardest questions you\'d face in a presentation.'
+    },
+    prompting_advanced: {
+      title: 'Advanced prompting techniques',
+      subtitle: 'Unlock Claude\'s full potential',
+      what: 'Go beyond basic prompts. Chain-of-thought, few-shot examples, persona layering, and structured output requests. These techniques separate casual users from power users.',
+      skills: ['Few-shot prompting with examples', 'Chain-of-thought reasoning', 'Structured output requests (JSON, tables, etc.)', 'Multi-step task decomposition'],
+      funTask: '🕵️ Give Claude three example film reviews (short ones you write). Then ask it to write a review of a movie it knows — in exactly that style.',
+      workTask: 'Pick a complex task from your work. Break it into 3 steps and run each as a separate Claude conversation, using the output of step 1 as input to step 2.'
+    },
+    claude_projects: {
+      title: 'Claude Projects and memory',
+      subtitle: 'Build a persistent AI workspace',
+      what: 'Claude Projects let you give Claude persistent context — your company background, your writing style, your preferences. Set one up properly and every conversation starts ahead.',
+      skills: ['Setting up a Project with system context', 'Adding documents and background', 'Using Projects for ongoing work'],
+      funTask: '🏡 Create a Project called "My Alter Ego" — upload 3 facts about a fictional version of you. Ask Claude to give you a day-in-the-life of your alter ego.',
+      workTask: 'Create a work Project. Add your role, your team\'s key goals, and your preferred communication style. Use it for your next three work tasks.'
+    },
+    connectors: {
+      title: 'Connectors and integrations',
+      subtitle: 'Bring Claude into your existing tools',
+      what: 'Claude can connect to Google Drive, Notion, and other tools — letting you reference real documents in your prompts. This is where the productivity really accelerates.',
+      skills: ['Connecting Google Drive or Notion', 'Referencing documents in conversations', 'Combining Claude with your existing workflow'],
+      funTask: '📚 Upload any document you\'ve written (personal or work). Ask Claude to write a Wikipedia-style article about you based only on that document.',
+      workTask: 'Connect one tool you use daily. In your next Claude session, reference a real document and ask Claude to help you improve or summarise it.'
+    },
+    artifacts: {
+      title: 'Artifacts and visual outputs',
+      subtitle: 'Claude can build things, not just write',
+      what: 'Claude\'s Artifacts feature lets it create interactive content — data tables, HTML pages, calculators, frameworks. Learn when and how to use this powerful output mode.',
+      skills: ['Requesting structured Artifacts', 'Building tables and trackers', 'Creating interactive HTML outputs'],
+      funTask: '🎮 Ask Claude to build a simple "Would You Rather" quiz as an interactive HTML page — 5 questions you provide. See the result!',
+      workTask: 'Ask Claude to build a table, tracker, or one-pager for something you use in your job. Give it your data and ask for a structured output.'
+    },
+    automation: {
+      title: 'Workflows and automation thinking',
+      subtitle: 'Design AI-powered work processes',
+      what: 'Think beyond single prompts. How can Claude become a step in a larger workflow? This module teaches systems thinking for AI — identifying repetitive tasks and designing Claude-assisted processes.',
+      skills: ['Identifying automation opportunities', 'Designing multi-step Claude workflows', 'Combining Claude with Zapier, Make, or APIs'],
+      funTask: '🤖 Ask Claude to design a fictional "AI employee" for the most boring part of your job. What would it do all day? What would it output?',
+      workTask: 'Map out a 5-step process you do regularly. Ask Claude: "Which steps could you help me with? How would you redesign this workflow with AI?"'
+    },
+    team_enablement: {
+      title: 'Bringing your team along',
+      subtitle: 'Scale your AI skills to the people around you',
+      what: 'The real multiplier isn\'t you using AI — it\'s your team using AI well. This module covers how to share what you\'ve learned, create team prompts, and build collective capability.',
+      skills: ['Creating a team prompt library', 'Running an AI demo for colleagues', 'Building shared Claude Projects'],
+      funTask: '🎓 Ask Claude to create a 5-minute "intro to AI for sceptics" talk you could give to a friend or family member who thinks AI is just hype.',
+      workTask: 'Run a 15-minute informal demo with a colleague. Pick one task they struggle with and show how Claude can help. Ask for their reaction.'
+    },
+    api_intro: {
+      title: 'Introduction to the Claude API',
+      subtitle: 'Go under the hood',
+      what: 'The Claude API opens up programmatic access — you can build Claude into applications, scripts, and automated workflows. This module demystifies the API for non-developers and helps technical users get started.',
+      skills: ['Understanding API basics', 'Making your first API call', 'Key parameters (temperature, tokens, system prompt)'],
+      funTask: '🤓 Without using the API, ask Claude to explain how it works to a 10-year-old. Then ask it to explain it to a CTO. Compare the explanations.',
+      workTask: 'Make your first API call using Claude\'s documentation. Even if you\'re not a developer, walk through the quickstart — notice how the system prompt changes everything.'
+    },
+    presentation_mastery: {
+      title: 'Decks and presentations that wow',
+      subtitle: 'From slide structure to speaker notes',
+      what: 'Claude can help you go from "I need to present this" to a fully structured, well-argued deck — faster than you\'ve ever built one. Learn the end-to-end presentation workflow.',
+      skills: ['Building slide structures from scratch', 'Writing compelling slide copy', 'Generating speaker notes'],
+      funTask: '🎬 Ask Claude to structure a TED talk on the most mundane topic you can think of (e.g., "The perfect cup of tea"). Ask it to make it genuinely moving.',
+      workTask: 'Take your next presentation and run the full workflow: structure → narrative → slides copy → speaker notes. All in Claude.'
+    }
+  };
+
+  // ---- PERSONA-SPECIFIC PLAN TEMPLATES ----
+  const plans = {
+    explorer: {
+      themes: ['Getting Comfortable', 'Building Confidence', 'First Real Wins', 'Making It a Habit', 'Going Deeper', 'Your AI Future', 'Sharing What You Know', 'Full Integration'],
+      weekModules: [
+        ['first_chat', 'prompt_craft', 'writing_basics'],
+        ['email_comms', 'research_basics', 'meetings_summaries'],
+        ['strategy_thinking', 'claude_projects', 'data_thinking'],
+        ['artifacts', 'prompting_advanced', 'team_enablement'],
+        ['connectors', 'automation', 'presentation_mastery'],
+        ['prompting_advanced', 'strategy_thinking', 'team_enablement'],
+        ['api_intro', 'automation', 'artifacts'],
+        ['team_enablement', 'connectors', 'presentation_mastery']
+      ]
+    },
+    pragmatist: {
+      themes: ['Quick Wins Fast', 'Your Biggest Time Drains', 'Sharper Outputs', 'Systematic Efficiency', 'Advanced Time Saving', 'Full Workflow Overhaul', 'Scale It Up', 'Optimise Everything'],
+      weekModules: [
+        ['email_comms', 'meetings_summaries', 'prompt_craft'],
+        ['writing_basics', 'research_basics', 'claude_projects'],
+        ['data_thinking', 'artifacts', 'strategy_thinking'],
+        ['prompting_advanced', 'automation', 'connectors'],
+        ['presentation_mastery', 'team_enablement', 'api_intro'],
+        ['automation', 'connectors', 'artifacts'],
+        ['team_enablement', 'prompting_advanced', 'strategy_thinking'],
+        ['api_intro', 'automation', 'claude_projects']
+      ]
+    },
+    analyst: {
+      themes: ['Data Conversations', 'Analytical Prompting', 'Insight Generation', 'Structured Outputs', 'Deep Analysis', 'Model Thinking', 'Automation & Scale', 'Analytical Leadership'],
+      weekModules: [
+        ['data_thinking', 'prompt_craft', 'research_basics'],
+        ['strategy_thinking', 'artifacts', 'writing_basics'],
+        ['prompting_advanced', 'claude_projects', 'data_thinking'],
+        ['automation', 'connectors', 'presentation_mastery'],
+        ['api_intro', 'artifacts', 'prompting_advanced'],
+        ['strategy_thinking', 'team_enablement', 'research_basics'],
+        ['automation', 'connectors', 'api_intro'],
+        ['team_enablement', 'presentation_mastery', 'strategy_thinking']
+      ]
+    },
+    communicator: {
+      themes: ['Finding Your AI Voice', 'Writing at Speed', 'Research That Shines', 'Presentations That Land', 'Audience Mastery', 'Content at Scale', 'Multi-Channel Excellence', 'Thought Leadership'],
+      weekModules: [
+        ['writing_basics', 'prompt_craft', 'email_comms'],
+        ['research_basics', 'meetings_summaries', 'first_chat'],
+        ['presentation_mastery', 'strategy_thinking', 'claude_projects'],
+        ['prompting_advanced', 'artifacts', 'connectors'],
+        ['team_enablement', 'automation', 'writing_basics'],
+        ['data_thinking', 'research_basics', 'strategy_thinking'],
+        ['prompting_advanced', 'connectors', 'automation'],
+        ['api_intro', 'team_enablement', 'presentation_mastery']
+      ]
+    },
+    ambitious: {
+      themes: ['Foundations at Speed', 'Power User Mode', 'Deep Capabilities', 'Workflow Architecture', 'Technical Depth', 'Team Multiplication', 'Building the Future', 'Leading AI Transformation'],
+      weekModules: [
+        ['prompt_craft', 'strategy_thinking', 'claude_projects'],
+        ['prompting_advanced', 'artifacts', 'research_basics'],
+        ['connectors', 'automation', 'data_thinking'],
+        ['api_intro', 'presentation_mastery', 'team_enablement'],
+        ['writing_basics', 'email_comms', 'meetings_summaries'],
+        ['automation', 'connectors', 'artifacts'],
+        ['team_enablement', 'api_intro', 'strategy_thinking'],
+        ['presentation_mastery', 'prompting_advanced', 'team_enablement']
+      ]
+    },
+    builder: {
+      themes: ['API First', 'Prompting Architecture', 'Building Workflows', 'Integration Patterns', 'Advanced Outputs', 'Scale & Automate', 'Team Tools', 'Production AI'],
+      weekModules: [
+        ['api_intro', 'prompt_craft', 'prompting_advanced'],
+        ['artifacts', 'automation', 'connectors'],
+        ['data_thinking', 'strategy_thinking', 'claude_projects'],
+        ['research_basics', 'writing_basics', 'presentation_mastery'],
+        ['team_enablement', 'email_comms', 'meetings_summaries'],
+        ['automation', 'api_intro', 'connectors'],
+        ['team_enablement', 'prompting_advanced', 'artifacts'],
+        ['strategy_thinking', 'presentation_mastery', 'data_thinking']
+      ]
+    }
+  };
+
+  const plan = plans[personaKey];
+  const result = [];
+
+  for (let w = 0; w < weeks; w++) {
+    const modKeys = plan.weekModules[w % plan.weekModules.length];
+    result.push({
+      week: w + 1,
+      theme: plan.themes[w],
+      modules: modKeys.map(k => modules[k])
+    });
+  }
+
+  return result;
+}
+
+// ---- RENDER FUNCTIONS ----
+function renderQuestion(qIndex) {
+  const q = QUESTIONS[qIndex];
+  const wrap = document.getElementById('questionWrap');
+
+  let optionsHTML = '';
+
+  if (q.type === 'single') {
+    optionsHTML = `<div class="choices ${q.layout || 'grid-2'}">`;
+    q.options.forEach((opt, i) => {
+      const sel = state.answers[q.id] === i ? 'selected' : '';
+      optionsHTML += `
+        <div class="choice ${sel}" onclick="selectSingle('${q.id}', ${i}, this)">
+          <div class="choice-icon">${opt.icon}</div>
+          <div class="choice-content">
+            <div class="choice-label">${opt.label}</div>
+            ${opt.desc ? `<div class="choice-desc">${opt.desc}</div>` : ''}
+          </div>
+          <div class="choice-check"></div>
+        </div>`;
+    });
+    optionsHTML += '</div>';
+  } else if (q.type === 'multi') {
+    const selected = state.answers[q.id] || [];
+    optionsHTML = '<div class="chips">';
+    q.options.forEach((opt, i) => {
+      const sel = selected.includes(i) ? 'selected' : '';
+      optionsHTML += `<div class="chip ${sel}" onclick="toggleMulti('${q.id}', ${i}, this)"><span class="chip-emoji">${opt.icon}</span>${opt.label}</div>`;
+    });
+    optionsHTML += '</div>';
+  }
+
+  const isFirstQ = qIndex === 0;
+  const hasAnswer = state.answers[q.id] !== undefined && 
+    (q.type === 'single' ? state.answers[q.id] !== undefined : (state.answers[q.id] || []).length > 0);
+
+  wrap.innerHTML = `
+    <div class="q-step">${q.step}</div>
+    <h2 class="q-title">${q.title}</h2>
+    <p class="q-subtitle">${q.subtitle}</p>
+    ${optionsHTML}
+    <div class="q-nav">
+      <button class="btn-back" onclick="goBack()" ${isFirstQ ? 'style="visibility:hidden"' : ''}>← Back</button>
+      <button class="btn-next" id="qNextBtn" ${hasAnswer ? '' : 'disabled'} onclick="nextQuestion()">
+        ${qIndex === QUESTIONS.length - 1 ? 'Almost done →' : 'Continue →'}
+      </button>
+    </div>
+  `;
+}
+
+function selectSingle(qId, idx, el) {
+  state.answers[qId] = idx;
+  document.querySelectorAll('.choice').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('qNextBtn').disabled = false;
+}
+
+function toggleMulti(qId, idx, el) {
+  if (!state.answers[qId]) state.answers[qId] = [];
+  const arr = state.answers[qId];
+  const pos = arr.indexOf(idx);
+  if (pos > -1) { arr.splice(pos, 1); el.classList.remove('selected'); }
+  else { arr.push(idx); el.classList.add('selected'); }
+  document.getElementById('qNextBtn').disabled = arr.length === 0;
+}
+
+function nextQuestion() {
+  state.currentQ++;
+  if (state.currentQ < QUESTIONS.length) {
+    updateProgress((state.currentQ / (QUESTIONS.length + 1)) * 100);
+    showScreen('screen-questions');
+    renderQuestion(state.currentQ);
+  } else {
+    updateProgress(90);
+    showScreen('screen-weeks');
+  }
+}
+
+function goBack() {
+  if (state.currentQ === 0) {
+    showScreen('screen-intro');
+    document.getElementById('progressWrap').style.display = 'none';
+  } else if (document.getElementById('screen-weeks').classList.contains('active')) {
+    state.currentQ = QUESTIONS.length - 1;
+    showScreen('screen-questions');
+    renderQuestion(state.currentQ);
+    updateProgress(((QUESTIONS.length - 1) / (QUESTIONS.length + 1)) * 100);
+  } else {
+    state.currentQ--;
+    showScreen('screen-questions');
+    renderQuestion(state.currentQ);
+    updateProgress((state.currentQ / (QUESTIONS.length + 1)) * 100);
+  }
+}
+
+function selectWeeks(n, el) {
+  state.weeks = n;
+  document.querySelectorAll('.week-option').forEach(w => w.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('weekNextBtn').disabled = false;
+}
+
+function updateProgress(pct) {
+  document.getElementById('progressFill').style.width = pct + '%';
+  const q = state.currentQ + 1;
+  document.getElementById('progressLabel').textContent = `${Math.min(q, QUESTIONS.length)} / ${QUESTIONS.length}`;
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function startQuiz() {
+  document.getElementById('progressWrap').style.display = 'flex';
+  updateProgress(0);
+  showScreen('screen-questions');
+  renderQuestion(0);
+}
+
+// ---- GOOGLE SHEETS LOGGING ----
+// Paste your Google Apps Script Web App URL below after completing setup
+const SHEETS_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzbEL45w3G9wIG4Y9aJqFkZ_UY1gYgYrO5ndRjhbw6bxxfVefS_Obms650j6b2dMV6gCQ/exec';
+
+const QUESTION_LABELS = [
+  'Role / Function',
+  'Primary Tasks',
+  'Current AI Usage',
+  'Tech Comfort Level',
+  'Ambition',
+  'Tools Used',
+  'Primary Device'
+];
+
+const OPTION_LABELS = {
+  role:      ['Finance & Strategy','Marketing & Comms','Sales & Client','Operations & Projects','Tech & Product','Consulting & Advisory','People & HR','Other / Generalist'],
+  tasks:     ['Writing & editing','Data analysis','Research','Planning & scheduling','Meetings & presenting','Emails & comms','Reports & documents','Building / coding','Client & stakeholder work','Strategy & ideation'],
+  ai_usage:  ['Just heard about it','Tried it once or twice','Occasional user','Regular user'],
+  tech_level:['Not techy at all','Comfortable','Quite technical','Very technical'],
+  ambition:  ['Just curious','Save time','Become a power user','Lead AI adoption'],
+  tools:     ['Excel / Google Sheets','Word / Google Docs','PowerPoint / Slides','Slack / Teams','Gmail / Outlook','Notion / Confluence','Salesforce / CRM','VS Code / coding tools','Tableau / Power BI','Canva / Figma'],
+  device:    ['Laptop / Desktop','Mobile / Phone','iPad / Tablet']
+};
+
+function formatAnswer(qId, value) {
+  const labels = OPTION_LABELS[qId];
+  if (!labels) return value;
+  if (Array.isArray(value)) return value.map(i => labels[i] || i).join(', ');
+  return labels[value] !== undefined ? labels[value] : value;
+}
+
+// Generates a short unique session ID e.g. "a3f9b2c1"
+function generateSessionId() {
+  return Math.random().toString(36).slice(2, 8) + Date.now().toString(36).slice(-4);
+}
+
+async function logToSheets(personaKey, weeksCount) {
+  if (!SHEETS_WEBHOOK_URL || SHEETS_WEBHOOK_URL === 'YOUR_WEBHOOK_URL_HERE') return;
+
+  const QID_ORDER = ['role','tasks','ai_usage','tech_level','ambition','tools','device'];
+  const plan = generatePlan(personaKey, weeksCount);
+  const sessionId = generateSessionId();
+  const timestamp = new Date().toISOString();
+
+  // ---- PAYLOAD 1: Tab 1 row — tester selections summary ----
+  const responseRow = {
+    type: 'response',
+    session_id: sessionId,
+    timestamp,
+    persona: PERSONAS[personaKey].name,
+    weeks_selected: weeksCount,
+    ...Object.fromEntries(
+      QID_ORDER.map((qId, i) => [
+        QUESTION_LABELS[i],
+        formatAnswer(qId, state.answers[qId])
+      ])
+    )
+  };
+
+  // ---- PAYLOAD 2: Tab 2 rows — one full row per module ----
+  const moduleRows = [];
+  plan.forEach(week => {
+    week.modules.forEach((mod, modIdx) => {
+      moduleRows.push({
+        type: 'plan_detail',
+        session_id: sessionId,
+        timestamp,
+        persona: PERSONAS[personaKey].name,
+        week_number: week.week,
+        week_theme: week.theme,
+        module_number: modIdx + 1,
+        module_title: mod.title,
+        module_subtitle: mod.subtitle,
+        what_youll_learn: mod.what,
+        skills_covered: mod.skills.join(' | '),
+        fun_practice_task: mod.funTask,
+        work_application: mod.workTask
+      });
+    });
+  });
+
+  // Fire all payloads in parallel — silently, never blocking UX
+  try {
+    await Promise.all(
+      [responseRow, ...moduleRows].map(payload =>
+        fetch(SHEETS_WEBHOOK_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        })
+      )
+    );
+  } catch (e) {
+    console.warn('Logging failed silently:', e);
+  }
+}
+
+function buildPlan() {
+  showScreen('screen-loading');
+  const personaKey = scorePersona();
+  state.persona = personaKey;
+
+  // Log silently in background — doesn't block or affect UX
+  logToSheets(personaKey, state.weeks);
+
+  setTimeout(() => {
+    renderPersonaReveal(personaKey);
+    showScreen('screen-persona');
+  }, 1800);
+}
+
+function renderPersonaReveal(personaKey) {
+  const p = PERSONAS[personaKey];
+  const screen = document.getElementById('screen-persona');
+  screen.innerHTML = `
+    <div class="persona-reveal">
+      <div class="persona-tag">Your AI Persona</div>
+      <div class="persona-badge">${p.emoji}</div>
+      <h2 class="persona-name">${p.name}</h2>
+      <p class="persona-desc">${p.desc}</p>
+      <div class="persona-traits">
+        ${p.traits.map(t => `<div class="trait-pill"><span class="trait-icon">${t.split(' ')[0]}</span>${t.split(' ').slice(1).join(' ')}</div>`).join('')}
+      </div>
+      <button class="btn-primary" onclick="showPlan()">
+        See My ${state.weeks}-Week Plan
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+  `;
+}
+
+function showPlan() {
+  const plan = generatePlan(state.persona, state.weeks);
+  const p = PERSONAS[state.persona];
+  const screen = document.getElementById('screen-plan');
+
+  let weeksNavHTML = plan.map((w, i) => 
+    `<button class="week-tab ${i===0?'active':''}" onclick="switchWeek(${i})" id="weektab-${i}">Week ${w.week}</button>`
+  ).join('');
+
+  let weeksHTML = plan.map((w, wi) => `
+    <div class="week-content ${wi===0?'active':''}" id="week-${wi}">
+      <div class="week-title-row">
+        <span class="week-big-num">0${w.week}</span>
+        <h3 class="week-title">${w.theme}</h3>
+      </div>
+      <div class="week-theme">Week ${w.week} · ${w.modules.length} modules</div>
+      <div class="modules-grid">
+        ${w.modules.map((m, mi) => `
+          <div class="module-card" id="mod-${wi}-${mi}">
+            <div class="module-header" onclick="toggleModule('mod-${wi}-${mi}')">
+              <div class="module-num">Module ${mi+1}</div>
+              <div class="module-title-wrap">
+                <div class="module-title">${m.title}</div>
+                <div class="module-subtitle">${m.subtitle}</div>
+              </div>
+              <div class="module-toggle">▾</div>
+            </div>
+            <div class="module-body">
+              <div class="module-section">
+                <div class="module-section-title">What you'll learn</div>
+                <p>${m.what}</p>
+              </div>
+              <div class="module-section">
+                <div class="module-section-title">Skills covered</div>
+                <ul>${m.skills.map(s => `<li>${s}</li>`).join('')}</ul>
+              </div>
+              <div class="module-section">
+                <div class="fun-task">
+                  <div class="fun-task-label">🎯 Fun practice task</div>
+                  <p>${m.funTask}</p>
+                </div>
+              </div>
+              <div class="module-section">
+                <div class="work-task">
+                  <div class="work-task-label">💼 Work application</div>
+                  <p>${m.workTask}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+
+  screen.innerHTML = `
+    <div class="plan-header">
+      <div class="plan-intro">
+        <div class="plan-persona-mini">${p.emoji}</div>
+        <div class="plan-intro-text">
+          <h2>Your ${state.weeks}-Week Claude Learning Plan — ${p.name}</h2>
+          <p>Each week has 3 modules. Each module includes a fun low-stakes practice task and a real work application. Work through them in order, or jump to what you need most.</p>
+        </div>
+      </div>
+      <div class="weeks-nav">${weeksNavHTML}</div>
+      ${weeksHTML}
+      <div class="plan-actions">
+        <button class="btn-primary" onclick="window.print()">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6V2h8v4M4 12H2V7h12v5h-2M4 10h8v4H4v-4z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Print / Save Plan
+        </button>
+        <button class="btn-secondary" onclick="restartQuiz()">
+          ↺ Start Over
+        </button>
+      </div>
+    </div>
+  `;
+
+  showScreen('screen-plan');
+}
+
+function switchWeek(idx) {
+  document.querySelectorAll('.week-tab').forEach((t,i) => t.classList.toggle('active', i===idx));
+  document.querySelectorAll('.week-content').forEach((w,i) => w.classList.toggle('active', i===idx));
+}
+
+function toggleModule(id) {
+  const card = document.getElementById(id);
+  card.classList.toggle('open');
+}
+
+function restartQuiz() {
+  state.answers = {};
+  state.persona = null;
+  state.weeks = null;
+  state.currentQ = 0;
+  document.getElementById('progressWrap').style.display = 'none';
+  document.getElementById('progressFill').style.width = '0%';
+  showScreen('screen-intro');
+}
+</script>
+</body>
+</html>
