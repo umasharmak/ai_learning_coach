@@ -1263,10 +1263,24 @@ function generatePlan(personaKey, weeks) {
 
   for (let w = 0; w < weeks; w++) {
     const modKeys = plan.weekModules[w % plan.weekModules.length];
+    const resolvedModules = modKeys.map(k => {
+      if (!modules[k]) {
+        console.warn(`Missing module key: ${k}`);
+        return {
+          title: 'Module coming soon',
+          subtitle: 'Check back shortly',
+          what: 'This module is being prepared.',
+          skills: [],
+          funTask: 'More content coming soon.',
+          workTask: 'More content coming soon.'
+        };
+      }
+      return modules[k];
+    });
     result.push({
       week: w + 1,
-      theme: plan.themes[w],
-      modules: modKeys.map(k => modules[k])
+      theme: plan.themes[w % plan.themes.length],
+      modules: resolvedModules
     });
   }
 
@@ -1474,21 +1488,25 @@ async function logToSheets(personaKey, weeksCount) {
     });
   });
 
-  // Fire all payloads in parallel — silently, never blocking UX
-  try {
-    await Promise.all(
-      [responseRow, ...moduleRows].map(payload =>
-        fetch(SHEETS_WEBHOOK_URL, {
+  // Fire payloads sequentially — Apps Script can't handle many concurrent requests
+  const allPayloads = [responseRow, ...moduleRows];
+  const delay = ms => new Promise(res => setTimeout(res, ms));
+
+  (async () => {
+    for (const payload of allPayloads) {
+      try {
+        await fetch(SHEETS_WEBHOOK_URL, {
           method: 'POST',
           mode: 'no-cors',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
-        })
-      )
-    );
-  } catch (e) {
-    console.warn('Logging failed silently:', e);
-  }
+        });
+        await delay(150); // Small gap between requests to avoid throttling
+      } catch (e) {
+        console.warn('Logging failed silently for one row:', e);
+      }
+    }
+  })();
 }
 
 function buildPlan() {
@@ -1537,7 +1555,7 @@ function showPlan() {
   let weeksHTML = plan.map((w, wi) => `
     <div class="week-content ${wi===0?'active':''}" id="week-${wi}">
       <div class="week-title-row">
-        <span class="week-big-num">0${w.week}</span>
+        <span class="week-big-num">${w.week < 10 ? "0" + w.week : w.week}</span>
         <h3 class="week-title">${w.theme}</h3>
       </div>
       <div class="week-theme">Week ${w.week} · ${w.modules.length} modules</div>
